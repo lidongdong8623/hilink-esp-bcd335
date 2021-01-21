@@ -81,5 +81,8 @@ uint32 user_rf_cal_sector_set(void)
 void user_init(void)
 {
     printf("SDK version:%s\n", system_get_sdk_version());
+    
+    /* 启动 HiLink 任务 */
+    hilink_main(); // Add by lidongdong @2021-01-21.
 }
 

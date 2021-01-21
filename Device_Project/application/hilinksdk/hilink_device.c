@@ -104,7 +104,8 @@ int hilink_process_before_restart(int flag)
 int HiLinkGetPinCode(void)
 {
     /* 由开发者实现, 将设备PIN码返回 */
-    return -1;
+    
+    return 88888888;//Add by lidongdong  @2021-01-21
 }
 
 /*
@@ -135,6 +136,8 @@ int handle_refrigerateSwitch_cmd(bool *on)
     /* 实现对on属性的修改 */
     if (on != NULL) {
         /* 请在此处实现设备状态改变的操作 */
+      //g_refrigerateSwitch_on = *on ; Add by lidongdong  @2021-01-21, save value of "on".
+        hilink_printf("[TEST] PUT switch on: %d.\r\n", *on); // 打印出收到的状态
     }
 
     /* 若同步操作改变设备状态, 状态改变后, 返回HILINK_OK */
