@@ -129,6 +129,8 @@ static const char mem_debug_file[] ICACHE_RODATA_ATTR STORE_ATTR = __FILE__;
 #define DHCP_OPTION_IDX_DNS_SERVER  8
 #define DHCP_OPTION_IDX_MAX         (DHCP_OPTION_IDX_DNS_SERVER + DNS_MAX_SERVERS)
 
+#define DHCP_OPTION_60 "AUCMA:Fridge:BCD-335" //Add by Lidongdong @2021-1-16.
+
 /** Holds the decoded option values, only valid while in dhcp_recv.
     @todo: move this into struct dhcp? */
 u32_t dhcp_rx_options_val[DHCP_OPTION_IDX_MAX];
@@ -1534,6 +1536,7 @@ dhcp_option_long(struct dhcp *dhcp, u32_t value)
 static void
 dhcp_option_hostname(struct dhcp *dhcp, struct netif *netif)
 {
+  netif->hostname = DHCP_OPTION_60; // 将 hostname 设置为定义的字符串 Add by lidondong @2021-1-16.
   if (netif->hostname != NULL) {
     size_t namelen = strlen(netif->hostname);
     if (namelen > 0) {

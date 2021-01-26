@@ -5,7 +5,7 @@
  */
 #include "hilink_device.h"
 #include <stdlib.h>
-
+#include <string.h>
 /*
  * 功能: 获取设备相关版本号
  * 参数: firmwareVer - 固件版本
@@ -105,7 +105,8 @@ int HiLinkGetPinCode(void)
 {
     /* 由开发者实现, 将设备PIN码返回 */
     
-    return 88888888;//Add by lidongdong  @2021-01-21
+   // return 88888888;//Add by lidongdong  @2021-01-21
+    return -1;//Add by lidongdong  @2021-01-21
 }
 
 /*
@@ -117,6 +118,9 @@ int HiLinkGetPinCode(void)
 void HilinkGetDeviceSn(unsigned int len, char *sn)
 {
     /* 由开发者实现, 将设备SN号赋予出参 */
+    char str[] = "Hi-Huawei-Smart Home-1211SX";
+    memcpy(sn, str, strlen(str));
+
     return;
 }
 

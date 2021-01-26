@@ -20,4 +20,29 @@ cd /home/esp8266/Device_Project/application
 
 ls /home/esp8266/Device_Project/bin
 
+ESP-WROOM-02D:
+bin\eagle.irom0text.bin	                                0x10000
+bin\eagle.flash.bin	                                0x00000
+ESP8266_RTOS_SDK-2.0.0\bin\blank.bin	                0x1fb000
+ESP8266_RTOS_SDK-2.0.0\bin\blank.bin	                0x1fe000
+ESP8266_RTOS_SDK-2.0.0\bin\esp_init_data_default.bin	0x1fc000
+
+
+
+26M
+40MHz
+QIO
+16Mbit-C1
+
+./gen_misc.sh
+Y
+0
+2
+0
+5
+
+-rwxrwxrwx 1 root root 3.8M  1月 26 12:14 eagle.dump
+-rwxrwxrwx 1 root root 9.4M  1月 26 12:14 eagle.S
+-rwxrwxrwx 1 root root 560K  1月 26 12:14 eagle.irom0text.bin
+-rwxrwxrwx 1 root root  38K  1月 26 12:14 eagle.flash.bin
 
