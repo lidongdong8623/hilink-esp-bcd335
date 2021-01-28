@@ -24,6 +24,14 @@
 
 #include "esp_common.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "uart.h"
+
 /******************************************************************************
  * FunctionName : user_rf_cal_sector_set
  * Description  : SDK just reversed 4 sectors, used for rf init data and paramters.
@@ -72,6 +80,19 @@ uint32 user_rf_cal_sector_set(void)
 
     return rf_cal_sec;
 }
+/*
+typedef struct {
+    UART_BautRate   baud_rate;
+    UART_WordLength data_bits;
+    UART_ParityMode parity;    // chip size in byte
+    UART_StopBits   stop_bits;
+    UART_HwFlowCtrl flow_ctrl;
+    uint8           UART_RxFlowThresh ;
+    uint32          UART_InverseMask;
+} UART_ConfigTypeDef;
+*/
+
+
 /******************************************************************************
  * FunctionName : user_init
  * Description  : entry of user application, init user function here
@@ -80,8 +101,11 @@ uint32 user_rf_cal_sector_set(void)
 *******************************************************************************/
 void user_init(void)
 {
+	uart_init_new();//74800bps
+	//char* test_str = "Welcome to www.aucma.com\r\n";
+	//uart1_write_char('A');
     printf("SDK version:%s\n", system_get_sdk_version());
-    
+	
     /* 启动 HiLink 任务 */
     hilink_main(); // Add by lidongdong @2021-01-21.
 }

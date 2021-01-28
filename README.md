@@ -22,7 +22,7 @@ ls /home/esp8266/Device_Project/bin
 
 ESP-WROOM-02D:
 bin\eagle.irom0text.bin	                                0x10000
-bin\eagle.flash.bin	                                0x00000
+bin\eagle.flash.bin	                                    0x00000
 ESP8266_RTOS_SDK-2.0.0\bin\blank.bin	                0x1fb000
 ESP8266_RTOS_SDK-2.0.0\bin\blank.bin	                0x1fe000
 ESP8266_RTOS_SDK-2.0.0\bin\esp_init_data_default.bin	0x1fc000
