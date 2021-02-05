@@ -3,9 +3,19 @@
  * Description: 设备功能接口定义
  * Notes: 本文件根据开发者功能定义自动生成, 需要开发者适配实现。
  */
-#include "hilink_device.h"
 #include <stdlib.h>
 #include <string.h>
+#include "esp_common.h"
+#include "hilink_device.h"
+#include "uart.h"
+#include "user_config.h"
+
+
+extern uint8 g_send_data[19];
+extern uint8 g_receive_data[22];
+extern uint8 g_receive_data_old[22];
+extern DevInfo g_dev_info;
+
 /*
  * 功能: 获取设备相关版本号
  * 参数: firmwareVer - 固件版本
@@ -139,10 +149,14 @@ int handle_refrigerateSwitch_cmd(bool *on)
 {
     /* 实现对on属性的修改 */
     if (on != NULL) {
-        /* 请在此处实现设备状态改变的操作 */
-      //g_refrigerateSwitch_on = *on ; Add by lidongdong  @2021-01-21, save value of "on".
-        hilink_printf("[TEST] PUT switch on: %d.\r\n", *on); // 打印出收到的状态
+        /* 请在此处实现设备状态改变的操作 */        //Add by lidongdong  @2021-02-5 begin.
+		if(on)
+			g_send_data[1] = 0x03;  
+		else
+			g_send_data[1] = 0x00;            
     }
+    printf("Lidongdong:handle_refrigerateSwitch_cmd uart0_send_data()");    //Lidongdong add @2021-1-27.
+	uart0_send_data(g_send_data,sizeof(g_send_data));//Add by lidongdong  @2021-02-5 end.
 
     /* 若同步操作改变设备状态, 状态改变后, 返回HILINK_OK */
     /* 若异步操作改变设备状态, 此处返回HILINK_PROCESSING, 待状态改变后主动上报新状态 */
@@ -163,8 +177,13 @@ int handle_freezeSwitch_cmd(bool *on)
 {
     /* 实现对on属性的修改 */
     if (on != NULL) {
-        /* 请在此处实现设备状态改变的操作 */
+        /* 请在此处实现设备状态改变的操作 */        //Add by lidongdong  @2021-02-5 begin.
+		if(on)
+			g_send_data[1] = 0x04;  
+		else
+			g_send_data[1] = 0x00;            
     }
+	uart0_send_data(g_send_data,sizeof(g_send_data));//Add by lidongdong  @2021-02-5 end.
 
     /* 若同步操作改变设备状态, 状态改变后, 返回HILINK_OK */
     /* 若异步操作改变设备状态, 此处返回HILINK_PROCESSING, 待状态改变后主动上报新状态 */
@@ -185,9 +204,13 @@ int handle_intelligentSwitch_cmd(bool *on)
 {
     /* 实现对on属性的修改 */
     if (on != NULL) {
-        /* 请在此处实现设备状态改变的操作 */
+        /* 请在此处实现设备状态改变的操作 */        //Add by lidongdong  @2021-02-5 begin.
+		if(on)
+			g_send_data[1] = 0x01;  
+		else
+			g_send_data[1] = 0x00;            
     }
-
+	uart0_send_data(g_send_data,sizeof(g_send_data));//Add by lidongdong  @2021-02-5 end.
     /* 若同步操作改变设备状态, 状态改变后, 返回HILINK_OK */
     /* 若异步操作改变设备状态, 此处返回HILINK_PROCESSING, 待状态改变后主动上报新状态 */
     return HILINK_OK;
@@ -207,9 +230,10 @@ int handle_refrigerator_cmd(int *target)
 {
     /* 实现对target属性的修改 */
     if (target != NULL) {
+		g_send_data[2] = *target*2+100; //2
         /* 请在此处实现设备状态改变的操作 */
     }
-
+	uart0_send_data(g_send_data,sizeof(g_send_data));//Add by lidongdong  @2021-02-5 end.
     /* 若同步操作改变设备状态, 状态改变后, 返回HILINK_OK */
     /* 若异步操作改变设备状态, 此处返回HILINK_PROCESSING, 待状态改变后主动上报新状态 */
     return HILINK_OK;
@@ -290,6 +314,7 @@ int handle_variableMode_cmd(int *target)
  */
 int get_refrigerateSwitch_state(bool *on)
 {
+	*on = g_dev_info.g_refrigerateSwitch;
     /* 由开发者实现, 将refrigerateSwitch服务的属性当前值赋予出参 */
     return HILINK_RET_SUCCESS;
 }
@@ -303,6 +328,7 @@ int get_refrigerateSwitch_state(bool *on)
 int get_freezeSwitch_state(bool *on)
 {
     /* 由开发者实现, 将freezeSwitch服务的属性当前值赋予出参 */
+	*on = g_dev_info.g_freezeSwitch;
     return HILINK_RET_SUCCESS;
 }
 
@@ -314,6 +340,7 @@ int get_freezeSwitch_state(bool *on)
  */
 int get_intelligentSwitch_state(bool *on)
 {
+	*on = g_dev_info.g_intelligentSwitch;
     /* 由开发者实现, 将intelligentSwitch服务的属性当前值赋予出参 */
     return HILINK_RET_SUCCESS;
 }
@@ -328,6 +355,8 @@ int get_intelligentSwitch_state(bool *on)
 int get_refrigerator_state(int *target, int *current)
 {
     /* 由开发者实现, 将refrigerator服务的属性当前值赋予出参 */
+	*target = g_dev_info.g_refrigerator_temp_target;
+	*current = 8;
     return HILINK_RET_SUCCESS;
 }
 

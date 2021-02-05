@@ -288,6 +288,33 @@ void uart_init_new(void);
   * @return  null
   */
 void printf16(char* start, int len);
+
+/**
+  * @brief   send data[] to mcu by uart0.
+  *
+  * @param uint8 *buf
+  * @param int len
+  * @return  null
+  */
+void uart0_send_data(uint8 *buf,int len);
+
+
+/**
+  * @brief  parse receve data from uart0 and then save to global variable .
+  *
+  * @return  null
+  */
+void uart0_rec_data_parse();
+
+/**
+  * @brief  compare arry A with B.
+  **@param uint8 *arrayA
+  * @param uint8 *arrayB
+  * @return  bool,if equal return true.
+  */
+bool is_arry_equal(uint8 *arrayA, uint8 *arrayB);
+
+
 /**
   * @}
   */

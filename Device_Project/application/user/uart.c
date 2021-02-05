@@ -29,6 +29,7 @@
 #include "freertos/queue.h"
 
 #include "uart.h"
+#include "user_config.h"
 
 enum {
     UART_EVENT_RX_CHAR,
@@ -39,6 +40,11 @@ typedef struct _os_event_ {
     uint32 event;
     uint32 param;
 } os_event_t;
+
+uint8 g_receive_data[22] = {0};	
+uint8 g_receive_data_old[22] = {0};	
+uint8 g_send_data[19] = {0xaa,0};
+DevInfo g_dev_info;
 
 xTaskHandle xUartTaskHandle;
 xQueueHandle xQueueUart;
@@ -355,7 +361,7 @@ uart0_rx_intr_handler(void *para)
     uint8 uart_no = UART0;//UartDev.buff_uart_no;
     uint8 fifo_len = 0;
     uint8 buf_idx = 0;
-    uint8 fifo_tmp[25] = {0};
+
 
     uint32 uart_intr_status = READ_PERI_REG(UART_INT_ST(uart_no)) ;
 
@@ -375,25 +381,26 @@ uart0_rx_intr_handler(void *para)
 
             WRITE_PERI_REG(UART_INT_CLR(UART0), UART_RXFIFO_FULL_INT_CLR);
         } else if (UART_RXFIFO_TOUT_INT_ST == (uart_intr_status & UART_RXFIFO_TOUT_INT_ST)) {
-            printf("uart out:\r\n");
+            //printf("uart out:\r\n");
             fifo_len = (READ_PERI_REG(UART_STATUS(UART0)) >> UART_RXFIFO_CNT_S)&UART_RXFIFO_CNT;
             buf_idx = 0;
 
             while (buf_idx < fifo_len) {
                 //uart_tx_one_char(UART0, READ_PERI_REG(UART_FIFO(UART0)) & 0xFF);//send char to uart0
-				RcvChar = READ_PERI_REG(UART_FIFO(uart_no)) & 0xFF;        //Lidongdong add @2021-1-27.
-				fifo_tmp[buf_idx] = RcvChar;                               //Lidongdong add @2021-1-27.fifo_tmp：串口接收到的所有数据放在此数组
+				RcvChar = READ_PERI_REG(UART_FIFO(uart_no)) & 0xFF;               //Lidongdong add @2021-1-27.
+				g_receive_data[buf_idx] = RcvChar;                                //Lidongdong add @2021-1-27.g_receive_data：串口接收到的所有数据放在此数组
                 buf_idx++;
             }
-			printf16(fifo_tmp,fifo_len);                                   //Lidongdong add @2021-1-27.
-			
-			if(fifo_tmp[0] = 0xaa )                                        //Lidongdong add @2021-1-27. 
+			//printf("0000new :\r\n");
+			//printf16(g_receive_data,fifo_len);                                  //Lidongdong add @2021-1-27.
+			//printf("000old :\r\n");
+			//printf16(g_receive_data_old,fifo_len);                              //Lidongdong add @2021-1-27.
+//			if (!is_arry_equal(g_receive_data,g_receive_data_old))                //Lidongdong add @2021-2-5 begin.
 			{
-				//todo:串口解析函数在此
-				printf("Lidongdong :fifo_tmp[0]:%02X\r\n",fifo_tmp[0]);    //Lidongdong add @2021-1-27.
-				uart_tx_one_char(UART0,'C');
-			}
-
+				//printf("is_arry_equal  is diff :\r\n");
+				uart0_rec_data_parse();                                           //解析数据，赋值给全局变量
+				memcpy( g_receive_data_old, g_receive_data, sizeof( g_receive_data ) ); //赋值给上一次的数组以便比较。
+		    }                                                                     //Lidongdong add @2021-2-5 end.
             WRITE_PERI_REG(UART_INT_CLR(UART0), UART_RXFIFO_TOUT_INT_CLR);
         } else if (UART_TXFIFO_EMPTY_INT_ST == (uart_intr_status & UART_TXFIFO_EMPTY_INT_ST)) {
             printf("empty\n\r");
@@ -414,6 +421,94 @@ printf16(char* start, int len) {
 	printf("\n");
 }
 
+void
+uart0_send_data(uint8 *buf, int len)
+{
+	int n;
+	for (n = 0; n < len ; n++)
+	{
+		uart_tx_one_char(UART0,buf[n]);
+	}
+	printf("Lidongdong:uart0_send_data()");    //Lidongdong add @2021-1-27.
+}
+
+bool 
+is_arry_equal(uint8 *arrayA, uint8 *arrayB)
+{
+	//printf("sizeof(arrayA)%d\n\r" ,sizeof(arrayA));
+	bool arraysEqual = true ;
+	int count = 0; //循环控制变量
+	while (arraysEqual && count < strlen(arrayA)-1)
+	{
+		if (arrayA[count] != arrayB[count])
+			arraysEqual = false;
+		count++;
+	}
+	return arraysEqual;
+
+}
+
+
+void
+uart0_rec_data_parse()  //Lidongdong add @2021-1-27. 串口解析函数在此
+{
+	if(g_receive_data[0] == 0xaa )                //引导码 0xAA
+	{				
+		printf("Lidongdong :uart0_rec_data_parse[0]:%02X\r\n",g_receive_data[0]);    //Lidongdong add @2021-1-27.
+		if(g_receive_data[1] == 0x00 )			//模式设定 0x00 手动模式
+		{
+			printf("Lidongdong :g_receive_data[2]:0x00\r\n");    //Lidongdong add @2021-2-4.
+		}
+		else if(g_receive_data[1] == 0x01 )	    //模式设定 0x01 智能模式
+		{
+			g_dev_info.g_refrigerateSwitch = false;
+			g_dev_info.g_freezeSwitch = false;
+			g_dev_info.g_intelligentSwitch = true;
+			report_freezeSwitch_state(g_dev_info.g_freezeSwitch);
+			report_intelligentSwitch_state(g_dev_info.g_intelligentSwitch);
+			report_refrigerateSwitch_state(g_dev_info.g_refrigerateSwitch);
+			printf("Lidongdong :g_receive_data[2]:0x01\r\n");    //Lidongdong add @2021-2-4.	
+		}
+		else if(g_receive_data[1] == 0x02 )	    //模式设定 0x02 假日模式
+		{
+			printf("Lidongdong :g_receive_data[2]:0x02\r\n");    //Lidongdong add @2021-2-4.
+		}	
+		else if(g_receive_data[1] == 0x03 )	    //模式设定 0x03 速冷模式
+		{
+			g_dev_info.g_refrigerateSwitch = true;
+			g_dev_info.g_freezeSwitch = false;
+			g_dev_info.g_intelligentSwitch = false;
+			report_freezeSwitch_state(g_dev_info.g_freezeSwitch);
+			report_intelligentSwitch_state(g_dev_info.g_intelligentSwitch);
+			report_refrigerateSwitch_state(g_dev_info.g_refrigerateSwitch);
+			printf("Lidongdong :g_receive_data[2]:0x03\r\n");    //Lidongdong add @2021-2-4.
+		}	
+		else if(g_receive_data[1] == 0x04 )	    //模式设定 0x04 速冻模式
+		{
+			g_dev_info.g_refrigerateSwitch = false;
+			g_dev_info.g_freezeSwitch = true;
+			g_dev_info.g_intelligentSwitch = false;
+			report_freezeSwitch_state(g_dev_info.g_freezeSwitch);
+			report_intelligentSwitch_state(g_dev_info.g_intelligentSwitch);
+			report_refrigerateSwitch_state(g_dev_info.g_refrigerateSwitch);
+			printf("Lidongdong :g_receive_data[2]:0x04\r\n");    //Lidongdong add @2021-2-4.
+		}	
+		else if(g_receive_data[1] == 0x05 )	    //模式设定 0x05 静音模式
+		{	
+			printf("Lidongdong :g_receive_data[2]:0x05\r\n");    //Lidongdong add @2021-2-4.
+		}
+		if(g_receive_data[2])			//冷藏设置温度 Value = realtmp*2+100
+		{
+			g_dev_info.g_refrigerator_temp_target = ((int)g_receive_data[2] -100)/2;
+			report_refrigerator_state(g_dev_info.g_refrigerator_temp_target,7);
+			printf("Lidongdong :g_refrigerator_temp_target:%d\r\n",g_dev_info.g_refrigerator_temp_target );    //Lidongdong add @2021-2-4.
+			
+
+		}
+		//todo
+		
+	}
+}
 
 void
 uart_init_new(void)
