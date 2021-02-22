@@ -41,14 +41,16 @@ typedef struct
 	bool g_refrigerateSwitch;        //模式设定 0x03 速冷模式
 	bool g_freezeSwitch;             //模式设定 0x04 速冻模式
 	bool g_intelligentSwitch;        //模式设定 0x01 智能模式
+	bool g_coolingSwitch;            //冷藏开关 
 	int g_refrigerator_temp_target;  //冷藏室设置温度
 	int g_refrigerator_temp_current; //冷藏室当前温度
 	int g_freezer_temp_target;       //冷冻室设置温度
 	int g_freezer_temp_current;      //冷冻室当前温度
+	int g_VariableRoom1_temp_target; //变温设定温度
 	//todo
 } DevInfo;
 
-extern uint8 g_send_data[19];
+extern uint8 g_send_data[13];
 extern uint8 g_receive_data[22];
 extern uint8 g_receive_data_old[22];
 extern DevInfo g_dev_info;
