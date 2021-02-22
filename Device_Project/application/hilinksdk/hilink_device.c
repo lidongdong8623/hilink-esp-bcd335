@@ -11,9 +11,9 @@
 #include "user_config.h"
 
 
-extern uint8 g_send_data[19];
-extern uint8 g_receive_data[22];
-extern uint8 g_receive_data_old[22];
+extern uint8 g_send_data[13];             //WIFI——>MCU串口发送数组 Add by wangshuqiang @2021-2-18
+extern uint8 g_receive_data[22];          //MCU——>WIFI串口接收数组
+extern uint8 g_receive_data_old[22];      //串口接收对比数组
 extern DevInfo g_dev_info;
 
 /*
@@ -114,7 +114,7 @@ int hilink_process_before_restart(int flag)
 int HiLinkGetPinCode(void)
 {
     /* 由开发者实现, 将设备PIN码返回 */
-    
+
    // return 88888888;//Add by lidongdong  @2021-01-21
     return -1;//Add by lidongdong  @2021-01-21
 }
@@ -128,7 +128,7 @@ int HiLinkGetPinCode(void)
 void HilinkGetDeviceSn(unsigned int len, char *sn)
 {
     /* 由开发者实现, 将设备SN号赋予出参 */
-    char str[] = "Hi-Huawei-Smart Home-1211SX";
+    char str[] = "Hi-Huawei-Smart Home-1211SY";  // Add by wangshuqiang @2021-2-18
     memcpy(sn, str, strlen(str));
 
     return;
@@ -148,16 +148,18 @@ void HilinkGetDeviceSn(unsigned int len, char *sn)
 int handle_refrigerateSwitch_cmd(bool *on)
 {
     /* 实现对on属性的修改 */
-    if (on != NULL) {
+    if (on != NULL) {                               //确保on指针指向具体地址，防止*on出现不可预知风险 Add by wangshuqiang @2021-2-18
         /* 请在此处实现设备状态改变的操作 */        //Add by lidongdong  @2021-02-5 begin.
-		if(on)
-			g_send_data[1] = 0x03;  
+		if(*on)
+		{
+			 g_send_data[1] = 0x03;                 //下发命令为 1 -> 速冷模式 Add by wangshuqiang @2021-2-18
+       	}
 		else
-			g_send_data[1] = 0x00;            
-    }
-    printf("Lidongdong:handle_refrigerateSwitch_cmd uart0_send_data()");    //Lidongdong add @2021-1-27.
+	         g_send_data[1] = 0x00;                 //下发命令为 0 -> 默认手动模式 Add by wangshuqiang @2021-2-18
+		}
+    //printf("Lidongdong:handle_refrigerateSwitch_cmd uart0_send_data()\r\n");    //Lidongdong add @2021-1-27.
 	uart0_send_data(g_send_data,sizeof(g_send_data));//Add by lidongdong  @2021-02-5 end.
-
+    //printf(" [Test wangshuqiang   hahhaha ] bit->1   data -> %02X",g_send_data[1]);    
     /* 若同步操作改变设备状态, 状态改变后, 返回HILINK_OK */
     /* 若异步操作改变设备状态, 此处返回HILINK_PROCESSING, 待状态改变后主动上报新状态 */
     return HILINK_OK;
@@ -178,13 +180,13 @@ int handle_freezeSwitch_cmd(bool *on)
     /* 实现对on属性的修改 */
     if (on != NULL) {
         /* 请在此处实现设备状态改变的操作 */        //Add by lidongdong  @2021-02-5 begin.
-		if(on)
-			g_send_data[1] = 0x04;  
+		if(*on)
+			g_send_data[1] = 0x04;                  //1 -> 进入速冻模式 0 -> 默认手动模式 Add by wangshuqiang @2021-2-18
 		else
-			g_send_data[1] = 0x00;            
+			g_send_data[1] = 0x00;
     }
 	uart0_send_data(g_send_data,sizeof(g_send_data));//Add by lidongdong  @2021-02-5 end.
-
+    //printf(" [Test wangshuqiang   hahhaha ] bit->1   data -> %02X",g_send_data[1]);
     /* 若同步操作改变设备状态, 状态改变后, 返回HILINK_OK */
     /* 若异步操作改变设备状态, 此处返回HILINK_PROCESSING, 待状态改变后主动上报新状态 */
     return HILINK_OK;
@@ -203,14 +205,15 @@ int handle_freezeSwitch_cmd(bool *on)
 int handle_intelligentSwitch_cmd(bool *on)
 {
     /* 实现对on属性的修改 */
-    if (on != NULL) {
+    if (on!= NULL) {
         /* 请在此处实现设备状态改变的操作 */        //Add by lidongdong  @2021-02-5 begin.
-		if(on)
-			g_send_data[1] = 0x01;  
-		else
-			g_send_data[1] = 0x00;            
+		if(*on)
+			g_send_data[1] = 0x01;                  // 1 -> 进入智能模式 0 -> 默认手动模式 Add by wangshuqiang @2021-2-18
+		else 
+			g_send_data[1] = 0x00;
     }
 	uart0_send_data(g_send_data,sizeof(g_send_data));//Add by lidongdong  @2021-02-5 end.
+	//printf(" [Test wangshuqiang   hahhaha ] bit->1   data -> %02X",g_send_data[1]);
     /* 若同步操作改变设备状态, 状态改变后, 返回HILINK_OK */
     /* 若异步操作改变设备状态, 此处返回HILINK_PROCESSING, 待状态改变后主动上报新状态 */
     return HILINK_OK;
@@ -230,10 +233,11 @@ int handle_refrigerator_cmd(int *target)
 {
     /* 实现对target属性的修改 */
     if (target != NULL) {
-		g_send_data[2] = *target*2+100; //2
+		g_send_data[2] = (char)((*target)*2+100);   //将App下发的控制温度数值经过公式转化为串口通信数值后强制转换为字符型数值 Add by wangshuqiang @2021-2-18
         /* 请在此处实现设备状态改变的操作 */
     }
 	uart0_send_data(g_send_data,sizeof(g_send_data));//Add by lidongdong  @2021-02-5 end.
+	//printf(" [Test wangshuqiang   hahhaha ] bit->2   data -> %02X",g_send_data[2]);
     /* 若同步操作改变设备状态, 状态改变后, 返回HILINK_OK */
     /* 若异步操作改变设备状态, 此处返回HILINK_PROCESSING, 待状态改变后主动上报新状态 */
     return HILINK_OK;
@@ -254,8 +258,11 @@ int handle_freezer_cmd(int *target)
     /* 实现对target属性的修改 */
     if (target != NULL) {
         /* 请在此处实现设备状态改变的操作 */
+		g_send_data[4] = (char)((*target)*2+100);  //将App下发的控制温度数值经过公式转化为串口通信数值后强制转换为字符型数值 Add by wangshuqiang @2021-2-18
     }
-
+	uart0_send_data(g_send_data,sizeof(g_send_data));
+	//printf(" [Test wangshuqiang   hahhaha ] bit->2   data -> %02X",g_send_data[4]);
+     //printf16(g_send_data,sizeof(g_send_data));
     /* 若同步操作改变设备状态, 状态改变后, 返回HILINK_OK */
     /* 若异步操作改变设备状态, 此处返回HILINK_PROCESSING, 待状态改变后主动上报新状态 */
     return HILINK_OK;
@@ -271,18 +278,26 @@ int handle_freezer_cmd(int *target)
  *          需要主动调用report接口将变更的新状态上报给App;
  *       2) 此函数由开发者实现.
  */
+
 int handle_coolingSwitch_cmd(bool *coolingSwitch)
 {
     /* 实现对coolingSwitch属性的修改 */
     if (coolingSwitch != NULL) {
         /* 请在此处实现设备状态改变的操作 */
+		if(*coolingSwitch)                        //1 -> 冷藏开 0 -> 冷藏关 Add by wangshuqiang @2021-2-20
+		{
+			g_send_data[10] = 0x40;               //默认第十个字节第7位始终为1  Add by wangshuqiang @2021-2-20
+		}
+		else
+			g_send_data[10] = 0xC0;
     }
+	uart0_send_data(g_send_data,sizeof(g_send_data));
+	//printf(" [Test wangshuqiang   hahhaha ] bit->2   data -> %02X",g_send_data[10]);
 
     /* 若同步操作改变设备状态, 状态改变后, 返回HILINK_OK */
     /* 若异步操作改变设备状态, 此处返回HILINK_PROCESSING, 待状态改变后主动上报新状态 */
     return HILINK_OK;
 }
-
 /*
  * 功能: 处理variableMode服务的控制命令
  * 参数: target - target属性的值
@@ -299,7 +314,6 @@ int handle_variableMode_cmd(int *target)
     if (target != NULL) {
         /* 请在此处实现设备状态改变的操作 */
     }
-
     /* 若同步操作改变设备状态, 状态改变后, 返回HILINK_OK */
     /* 若异步操作改变设备状态, 此处返回HILINK_PROCESSING, 待状态改变后主动上报新状态 */
     return HILINK_OK;
@@ -314,7 +328,7 @@ int handle_variableMode_cmd(int *target)
  */
 int get_refrigerateSwitch_state(bool *on)
 {
-	*on = g_dev_info.g_refrigerateSwitch;
+	*on = g_dev_info.g_refrigerateSwitch;      //接收的串口数值对应位解析出后，将状态赋值给指针指向内容等待拉取 Add by wangshuqiang @2021-2-18
     /* 由开发者实现, 将refrigerateSwitch服务的属性当前值赋予出参 */
     return HILINK_RET_SUCCESS;
 }
@@ -328,7 +342,7 @@ int get_refrigerateSwitch_state(bool *on)
 int get_freezeSwitch_state(bool *on)
 {
     /* 由开发者实现, 将freezeSwitch服务的属性当前值赋予出参 */
-	*on = g_dev_info.g_freezeSwitch;
+	*on = g_dev_info.g_freezeSwitch;          //冷冻模式状态赋值出参  Add by wangshuqiang @2021-2-20
     return HILINK_RET_SUCCESS;
 }
 
@@ -340,7 +354,7 @@ int get_freezeSwitch_state(bool *on)
  */
 int get_intelligentSwitch_state(bool *on)
 {
-	*on = g_dev_info.g_intelligentSwitch;
+	*on = g_dev_info.g_intelligentSwitch;     //智能模式状态赋值出参  Add by wangshuqiang @2021-2-20
     /* 由开发者实现, 将intelligentSwitch服务的属性当前值赋予出参 */
     return HILINK_RET_SUCCESS;
 }
@@ -355,8 +369,8 @@ int get_intelligentSwitch_state(bool *on)
 int get_refrigerator_state(int *target, int *current)
 {
     /* 由开发者实现, 将refrigerator服务的属性当前值赋予出参 */
-	*target = g_dev_info.g_refrigerator_temp_target;
-	*current = 8;
+	*target = g_dev_info.g_refrigerator_temp_target;       //冷藏室设定数值与当前状态赋值出参  Add by wangshuqiang @2021-2-20    
+	*current = g_dev_info.g_refrigerator_temp_current;
     return HILINK_RET_SUCCESS;
 }
 
@@ -370,6 +384,8 @@ int get_refrigerator_state(int *target, int *current)
 int get_freezer_state(int *target, int *current)
 {
     /* 由开发者实现, 将freezer服务的属性当前值赋予出参 */
+	*target = g_dev_info.g_freezer_temp_target;            //冷冻室设定数值与当前状态赋值出参  Add by wangshuqiang @2021-2-20
+	*current = g_dev_info.g_freezer_temp_current;
     return HILINK_RET_SUCCESS;
 }
 
@@ -382,6 +398,8 @@ int get_freezer_state(int *target, int *current)
 int get_coolingSwitch_state(bool *coolingSwitch)
 {
     /* 由开发者实现, 将coolingSwitch服务的属性当前值赋予出参 */
+	*coolingSwitch = g_dev_info.g_coolingSwitch;           //冷藏开关状态赋值出参  Add by wangshuqiang @2021-2-20
+	//printf("[TEST wangshuqiang   %d\r\n]",g_dev_info.g_coolingSwitch);
     return HILINK_RET_SUCCESS;
 }
 
@@ -394,6 +412,7 @@ int get_coolingSwitch_state(bool *coolingSwitch)
 int get_variableMode_state(int *target)
 {
     /* 由开发者实现, 将variableMode服务的属性当前值赋予出参 */
+
     return HILINK_RET_SUCCESS;
 }
 
@@ -406,6 +425,7 @@ int get_variableMode_state(int *target)
 int get_VariableRoom1_state(int *current)
 {
     /* 由开发者实现, 将VariableRoom1服务的属性当前值赋予出参 */
+	*current = g_dev_info.g_VariableRoom1_temp_target;    //变温室当前状态赋值出参  Add by wangshuqiang @2021-2-20
     return HILINK_RET_SUCCESS;
 }
 

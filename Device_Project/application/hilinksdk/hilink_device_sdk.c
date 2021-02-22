@@ -276,7 +276,7 @@ int hilink_put_char_state(const char *svcId, const char *payload, unsigned int l
                 (on == 0 || on == 1)) {
                 on_p = &on;
             }
-
+            
             err = handle_refrigerateSwitch_cmd(on_p);
             break;
         }
