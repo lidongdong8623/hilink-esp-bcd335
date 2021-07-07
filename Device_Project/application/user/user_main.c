@@ -21,16 +21,17 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  */
-
 #include "esp_common.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include "hilink.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "uart.h"
+#include "user_config.h"
+#include "gpio.h"
+#include "hw_timer.h"
 
 /******************************************************************************
  * FunctionName : user_rf_cal_sector_set
@@ -80,33 +81,55 @@ uint32 user_rf_cal_sector_set(void)
 
     return rf_cal_sec;
 }
-/*
-typedef struct {
-    UART_BautRate   baud_rate;
-    UART_WordLength data_bits;
-    UART_ParityMode parity;    // chip size in byte
-    UART_StopBits   stop_bits;
-    UART_HwFlowCtrl flow_ctrl;
-    uint8           UART_RxFlowThresh ;
-    uint32          UART_InverseMask;
-} UART_ConfigTypeDef;
-*/
-
-
 /******************************************************************************
  * FunctionName : user_init
  * Description  : entry of user application, init user function here
  * Parameters   : none
  * Returns      : none
 *******************************************************************************/
+
+void parse_task(void* param)
+{
+	HILINK_EnableProcessDelErrCode(1);                //离线模式下删除设备，设备连接路由后，自动变成待配网模式
+	while(1)
+	{
+		if(!is_arry_equal(g_receive_data,g_receive_data_old,sizeof(g_receive_data)/sizeof(uint8)))//Lidongdong add @2021-2-5 begin.
+		{
+			if(Check_Receive_num(g_receive_data,buf_idx))      //judge the accuracy of receive data
+				{   
+				  if(intelligentFlag==false)          //下发智能模式的数据部分手动操作，不用接受到的数据。
+				  {
+					  uart0_rec_data_trans();         //once receive the data,put the parse data to the send function
+				  }
+				  uart0_rec_data_parse();             //解析数据，赋值给全局变量		
+			      memcpy( g_receive_data_old, g_receive_data, sizeof( g_receive_data ) ); //赋值给上一次的数组以便比较。
+				}
+		}
+		vTaskDelay(3000);
+	}
+	
+}
+
+
+
 void user_init(void)
 {
-	uart_init_new();//74800bps
-	//char* test_str = "Welcome to www.aucma.com\r\n";
-	//uart1_write_char('A');
-    printf("SDK version:%s\n", system_get_sdk_version());
 	
-    /* 启动 HiLink 任务 */
-    hilink_main(); // Add by lidongdong @2021-01-21.
+	GPIO_ConfigTypeDef GPIO_ConfigInit; //初始化结构体
+	
+	GPIO_ConfigInit.GPIO_Pin = GPIO_Pin_5;  //GPIO5
+	GPIO_ConfigInit.GPIO_Mode = GPIO_Mode_Output; //输出模式
+	GPIO_ConfigInit.GPIO_Pullup = GPIO_PullUp_DIS; //不选择上拉
+	GPIO_ConfigInit.GPIO_IntrType = GPIO_PIN_INTR_DISABLE; //失能中断
+	
+	gpio_config(&GPIO_ConfigInit);          //初始化GPIO结构体
+	gpio_output_conf(GPIO_Pin_5,0,GPIO_Pin_5,0);//GPIO5输出高电平
+	uart_init_new();//74800bps
+	hw_timer_init();//初始化硬件定时器
+    //hw_timer_set_func(test_timer);
+    //hw_timer_arm(1000000,1);
+    printf("SDK version:%s\n", system_get_sdk_version());
+	hilink_main();
+	xTaskCreate(parse_task, "parse_task", 1024, NULL, 3, NULL);
 }
 

@@ -129,7 +129,7 @@ static const char mem_debug_file[] ICACHE_RODATA_ATTR STORE_ATTR = __FILE__;
 #define DHCP_OPTION_IDX_DNS_SERVER  8
 #define DHCP_OPTION_IDX_MAX         (DHCP_OPTION_IDX_DNS_SERVER + DNS_MAX_SERVERS)
 
-#define DHCP_OPTION_60 "AUCMA:Fridge:BCD-335" //Add by Lidongdong @2021-1-16.
+#define DHCP_OPTION_60 "AUCMA:Fridge:BCD-335WPGX" //Add by Lidongdong @2021-1-16.
 
 /** Holds the decoded option values, only valid while in dhcp_recv.
     @todo: move this into struct dhcp? */
@@ -184,6 +184,7 @@ static void dhcp_option_short(struct dhcp *dhcp, u16_t value);
 static void dhcp_option_long(struct dhcp *dhcp, u32_t value);
 #if LWIP_NETIF_HOSTNAME
 static void dhcp_option_hostname(struct dhcp *dhcp, struct netif *netif);
+static void dhcp_option_hostnameex(struct dhcp *dhcp, struct netif *netif);
 #endif /* LWIP_NETIF_HOSTNAME */
 /* always add the DHCP options trailer to end and pad */
 static void dhcp_option_trailer(struct dhcp *dhcp);
@@ -335,7 +336,8 @@ dhcp_select(struct netif *netif)
 #endif
 
 #if LWIP_NETIF_HOSTNAME
-    dhcp_option_hostname(dhcp, netif);
+   // dhcp_option_hostname(dhcp, netif);
+   dhcp_option_hostnameex(dhcp,netif);
 #endif /* LWIP_NETIF_HOSTNAME */
 
     dhcp_option_trailer(dhcp);
@@ -983,7 +985,8 @@ dhcp_discover(struct netif *netif)
     /**add options for support more router by liuHan**/
 #ifdef LWIP_ESP8266
 #if LWIP_NETIF_HOSTNAME
-    dhcp_option_hostname(dhcp, netif);
+   // dhcp_option_hostname(dhcp, netif);
+   dhcp_option_hostnameex(dhcp,netif);
 #endif /* LWIP_NETIF_HOSTNAME */
 
     dhcp_option(dhcp, DHCP_OPTION_PARAMETER_REQUEST_LIST, 12/*num options*/);
@@ -1548,6 +1551,28 @@ dhcp_option_hostname(struct dhcp *dhcp, struct netif *netif)
       LWIP_ASSERT("DHCP: hostname is too long!", namelen <= available);
       len = LWIP_MIN(namelen, available);
       dhcp_option(dhcp, DHCP_OPTION_HOSTNAME, len);
+      while (len--) {
+        dhcp_option_byte(dhcp, *p++);
+      }
+    }
+  }
+}
+
+static void
+dhcp_option_hostnameex(struct dhcp *dhcp, struct netif *netif)
+{
+  netif->hostname = DHCP_OPTION_60; // 将 hostname 设置为定义的字符串 Add by lidondong @2021-1-16.
+  if (netif->hostname != NULL) {
+    size_t namelen = strlen(netif->hostname);
+    if (namelen > 0) {
+      u8_t len;
+      const char *p = netif->hostname;
+      /* Shrink len to available bytes (need 2 bytes for OPTION_HOSTNAME
+         and 1 byte for trailer) */
+      size_t available = DHCP_OPTIONS_LEN - dhcp->options_out_len - 3;
+      LWIP_ASSERT("DHCP: hostname is too long!", namelen <= available);
+      len = LWIP_MIN(namelen, available);
+      dhcp_option(dhcp, DHCP_OPTION_US, len);
       while (len--) {
         dhcp_option_byte(dhcp, *p++);
       }

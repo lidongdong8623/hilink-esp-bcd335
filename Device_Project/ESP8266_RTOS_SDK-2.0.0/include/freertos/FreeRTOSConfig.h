@@ -88,8 +88,9 @@
 //#define configTOTAL_HEAP_SIZE		( ( size_t ) ( 17 * 1024 ) )
 #define configMAX_TASK_NAME_LEN		( 16 )
 #define configUSE_TRACE_FACILITY	0
-#define configUSE_STATS_FORMATTING_FUNCTIONS 0
-#define configUSE_16_BIT_TICKS		0
+#define configUSE_STATS_FORMATTING_FUNCTIONS 1//使能CPU占有时间 0 -> 1 
+
+#define configUSE_16_BIT_TICKS			
 #define configIDLE_SHOULD_YIELD		1
 
 #define INCLUDE_xTaskGetIdleTaskHandle 1
