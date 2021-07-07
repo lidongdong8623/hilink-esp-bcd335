@@ -5,7 +5,8 @@
  *              请开发者仔细阅读文件中的注释说明，参考或修改实现。
  */
 #include "hilink_ota.h"
-
+#include "esp_common.h"
+#include "hw_timer.h"
 /*
  * 获取MCU当前版本
  * version表示版本字符串
@@ -17,10 +18,16 @@
  * 注意：如果获取不到MCU的版本，则不对MCU进行升级。
  * 建议厂商在MCU正常启动后，或升级启动后，就将MCU的版本号传递给模组，确保模组可以获取到MCU的版本。
  */
+
+void update(void)
+{
+	unsigned char Wifi_update[5] = {0x8D,0x04,0x55,0xAA,0x90};
+	uart0_send_data(Wifi_update,sizeof(Wifi_update));
+}
 int HilinkGetMcuVersion(char *version, unsigned int inLen, unsigned int *outLen)
 {
     /* 厂商实现此接口 */
-    return RETURN_ERROR_NO_MCU;
+    return RETURN_OK;
 }
 
 /*
@@ -39,6 +46,14 @@ int HilinkGetMcuVersion(char *version, unsigned int inLen, unsigned int *outLen)
 int HilinkOtaStartProcess(int type)
 {
     /* 厂商实现此接口 */
+	/*if(type == UPDATE_TYPE_MANUAL)    //该写法有问题，平台固件版本 
+		hw_timer_set_func(update);
+		hw_timer_arm(500000,1);
+    if(type == UPDATE_TYPE_AUTO)
+	    printf("test HilinkOtaStartProcess UPDATE_TYPE_AUTO\r\n");
+	*/
+	hw_timer_set_func(update);
+	hw_timer_arm(500000,1);
     return RETURN_OK;
 }
 

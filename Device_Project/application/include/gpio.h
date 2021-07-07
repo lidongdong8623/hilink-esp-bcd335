@@ -47,7 +47,7 @@ extern "C" {
 #define GPIO_Pin_15             (BIT(15)) /* Pin 15 selected */
 #define GPIO_Pin_All            (0xFFFF)  /* All pins selected */
 
-#define GPIO_PIN_REG_0          PERIPHS_IO_MUX_GPIO0_U  //功能选择寄存器
+#define GPIO_PIN_REG_0          PERIPHS_IO_MUX_GPIO0_U
 #define GPIO_PIN_REG_1          PERIPHS_IO_MUX_U0TXD_U
 #define GPIO_PIN_REG_2          PERIPHS_IO_MUX_GPIO2_U
 #define GPIO_PIN_REG_3          PERIPHS_IO_MUX_U0RXD_U

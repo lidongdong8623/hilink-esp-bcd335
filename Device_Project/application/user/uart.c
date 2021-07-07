@@ -27,9 +27,14 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
-
+#include "hilink_device.h"
 #include "uart.h"
 #include "user_config.h"
+#include "hilink.h"
+#include "hilink_osadapter.h"
+#define FUNC_U0CTS    4
+#define FUNC_U0RTS    4
+
 
 enum {
     UART_EVENT_RX_CHAR,
@@ -41,13 +46,35 @@ typedef struct _os_event_ {
     uint32 param;
 } os_event_t;
 
-uint8 g_receive_data[22] = {0};        //串口数据接受数组
-uint8 g_receive_data_old[22] = {0};	   //串口数据接受对比数组
-uint8 g_send_data[13] = {0xaa,0};      //串口发送数组
-DevInfo g_dev_info;                    //状态参数结构体
+uint8 g_receive_data[23] = {0};        //串口数据接受数组
+uint8 g_receive_data_old[23] = {0};	   //串口数据接受对比数组
+uint8 g_send_data[13] = {0xAA};        //串口发送数组
+DevInfo g_dev_info = {
+      false,
+	  false,
+	  false,
+	  false,
+	  0,0,0,0,0,0,
+	  false,
+	  false,
+	  false,
+	  false,
+	  false,
+	  false,
+	  false,
+	  false,
+	  false,
+	  false,
+	   true
+};                                    //状态参数结构体
+uint8 Wifi_clean_config[5] = {0x8D,0x01,0x55,0xAA,0x8D};//直接向主控板发送慢闪协议。            
+bool hilink_restore_factory_flag = false; //恢复出厂设置标志位，false -> 不需要恢复  true -> 回复出厂设置
+uint8 buf_idx = 0;
+ 
 
 xTaskHandle xUartTaskHandle;
 xQueueHandle xQueueUart;
+
 
 LOCAL STATUS
 uart_tx_one_char(uint8 uart, uint8 TxChar)
@@ -91,6 +118,7 @@ uart0_write_char(char c)
 LOCAL void
 uart_rx_intr_handler_ssc(void *arg)
 {
+
     /* uart0 and uart1 intr combine togther, when interrupt occur, see reg 0x3ff20020, bit2, bit0 represents
       * uart1 and uart0 respectively
       */
@@ -354,18 +382,19 @@ UART_IntrConfig(UART_Port uart_no,  UART_IntrConfTypeDef *pUARTIntrConf)
 LOCAL void
 uart0_rx_intr_handler(void *para)
 {
-    /* uart0 and uart1 intr combine togther, when interrupt occur, see reg 0x3ff20020, bit2, bit0 represents
+	
+   /* uart0 and uart1 intr combine togther, when interrupt occur, see reg 0x3ff20020, bit2, bit0 represents
     * uart1 and uart0 respectively
     */
     uint8 RcvChar;
     uint8 uart_no = UART0;//UartDev.buff_uart_no;
     uint8 fifo_len = 0;
-    uint8 buf_idx = 0;
-
-
+    //uint8 buf_idx = 0;
+    
     uint32 uart_intr_status = READ_PERI_REG(UART_INT_ST(uart_no)) ;
 
-    while (uart_intr_status != 0x0) {
+    while (uart_intr_status != 0x0) 
+	{
         if (UART_FRM_ERR_INT_ST == (uart_intr_status & UART_FRM_ERR_INT_ST)) {
             //printf("FRM_ERR\r\n");
             WRITE_PERI_REG(UART_INT_CLR(uart_no), UART_FRM_ERR_INT_CLR);
@@ -380,45 +409,53 @@ uart0_rx_intr_handler(void *para)
             }
 
             WRITE_PERI_REG(UART_INT_CLR(UART0), UART_RXFIFO_FULL_INT_CLR);
-        } else if (UART_RXFIFO_TOUT_INT_ST == (uart_intr_status & UART_RXFIFO_TOUT_INT_ST)) {
-            //printf("uart out:\r\n");
+        } else if (UART_RXFIFO_TOUT_INT_ST == (uart_intr_status & UART_RXFIFO_TOUT_INT_ST)) {        //接收超时中断
             fifo_len = (READ_PERI_REG(UART_STATUS(UART0)) >> UART_RXFIFO_CNT_S)&UART_RXFIFO_CNT;
             buf_idx = 0;
-
+			//printf("\r\n");
             while (buf_idx < fifo_len) {
                 //uart_tx_one_char(UART0, READ_PERI_REG(UART_FIFO(UART0)) & 0xFF);//send char to uart0
 				RcvChar = READ_PERI_REG(UART_FIFO(uart_no)) & 0xFF;               //Lidongdong add @2021-1-27.
 				g_receive_data[buf_idx] = RcvChar;                                //Lidongdong add @2021-1-27.g_receive_data：串口接收到的所有数据放在此数组
                 buf_idx++;
             }
+			
 			//printf("0000new :\r\n");
 			//printf16(g_receive_data,fifo_len);                                  //Lidongdong add @2021-1-27.
 			//printf("000old :\r\n");
-			//printf16(g_receive_data_old,fifo_len);                              //Lidongdong add @2021-1-27.
-     		if (!is_arry_equal(g_receive_data,g_receive_data_old))                //Lidongdong add @2021-2-5 begin.
-			{
-				//printf("is_arry_equal  is diff :\r\n");
-				uart0_rec_data_parse();                                           //解析数据，赋值给全局变量
-				memcpy( g_receive_data_old, g_receive_data, sizeof( g_receive_data ) ); //赋值给上一次的数组以便比较。
-		    }                                                                     //Lidongdong add @2021-2-5 end.
+			//printf16(g_receive_data_old,fifo_len); //Lidongdong add @2021-1-27.
+			if(g_receive_data[0] != 0x8D)                //如果串口下发命令标志位为真，则不回发主控数据。
+			                                                                      //同时，对于主控回复的配网指令确定不回发
+			    uart0_send_data(g_receive_data,buf_idx);           //send back the data to the MCU add by wangshuqiang 2021-3-11
+			if(g_receive_data[0] == 0x8D)
+				{
+					if(
+					(g_receive_data[1] == 0x01)||\
+					(g_receive_data[1] == 0x02)||\
+					(g_receive_data[1] == 0x03)||\
+					(g_receive_data[1] == 0x04)||\
+					(g_receive_data[1] == 0x05)
+					)
+					hw_timer_disarm();
+				}
+			//Lidongdong add @2021-2-5 end.
             WRITE_PERI_REG(UART_INT_CLR(UART0), UART_RXFIFO_TOUT_INT_CLR);
         } else if (UART_TXFIFO_EMPTY_INT_ST == (uart_intr_status & UART_TXFIFO_EMPTY_INT_ST)) {
             printf("empty\n\r");
             WRITE_PERI_REG(UART_INT_CLR(uart_no), UART_TXFIFO_EMPTY_INT_CLR);
             CLEAR_PERI_REG_MASK(UART_INT_ENA(UART0), UART_TXFIFO_EMPTY_INT_ENA);
         } else {
-            //skip
         }
-
         uart_intr_status = READ_PERI_REG(UART_INT_ST(uart_no)) ;
     }
+	
 }
 void
-printf16(char* start, int len) {
+printf16(uint8 *start, int len) {
 	int i;
 	for (i = 0; i < len; i++)
 		printf(" %02X", start[i]);
-	printf("\n");
+	printf("\r\n");
 }
 /**
     串口发送函数  Add by wangshuqiang 2021-2-20
@@ -431,113 +468,243 @@ uart0_send_data(uint8 *buf, int len)
 	{
 		uart_tx_one_char(UART0,buf[n]);
 	}
-	printf("\r\nLidongdong:uart0_send_data()");    //Lidongdong add @2021-1-27.
 }
+
 
 /*
    串口接受数据对比函数 Add by wangshuqiang 2021-2-20
+   
+   Bug fixed by wangshuqiang @2021-2-23
+   Bug describution:uart send data as 0x00,program can't enter the 'if' function;
+   analysus reason :the function 'strlen' ended with '\0',while send 0x00,the function will stop 
+                    to count before the byte '0x00', when the results keep true before 0x00,when it
+                    comes to 0x00,it will quit the 'while' circulation,the final result will be True,the program won't enter 'if'.
+   solution :change the function 'strlen' with 'sizeof'					
+   
 */
 bool 
-is_arry_equal(uint8 *arrayA, uint8 *arrayB)
+is_arry_equal(uint8 *arrayA, uint8 *arrayB , int len)
 {
 	//printf("sizeof(arrayA)%d\n\r" ,sizeof(arrayA));
 	bool arraysEqual = true ;
 	int count = 0; //循环控制变量
-	while (arraysEqual && count < strlen(arrayA)-1)
-	{
+	while (arraysEqual && count < len)   
+	{                          
 		if (arrayA[count] != arrayB[count])
 			arraysEqual = false;
 		count++;
 	}
 	return arraysEqual;
-
 }
 
 
 void
 uart0_rec_data_parse()  //Lidongdong add @2021-1-27. 串口解析函数在此
 {
-	if(g_receive_data[0] == 0xaa )                //引导码 0xAA
-	{				
-		printf("Lidongdong :uart0_rec_data_parse[0]:%02X\r\n",g_receive_data[0]);    //Lidongdong add @2021-1-27.
-		if(g_receive_data[1] == 0x00 )			//模式设定 0x00 手动模式  
-		{
-			printf("Lidongdong :g_receive_data[2]:0x00\r\n");    //Lidongdong add @2021-2-4.
+	
+	ETS_UART_INTR_DISABLE();							//解析时失能串口中断
+	if(g_receive_data[0] == 0xAA)
+	{
+		if((g_receive_data[1] == 0x00) ||\
+		  (g_receive_data[1] == 0x01)  ||\
+		  (g_receive_data[1] == 0x03)  ||\
+		  (g_receive_data[1] == 0x04))
+		{  
+		   if(g_receive_data[1] != g_receive_data_old[1])
+			{
+			    if(g_receive_data[1] == 0x00)             //手动模式
+				{
+					report_refrigerateSwitch_state(false);
+					report_freezeSwitch_state(false);
+					report_intelligentSwitch_state(false);
+					
+				}
+				else if(g_receive_data[1] == 0x01)		  //智能模式
+				{
+					report_refrigerateSwitch_state(false);
+					report_freezeSwitch_state(false);
+					report_intelligentSwitch_state(true);
+					
+				}
+				else if(g_receive_data[1] == 0x03)		  //速冷模式
+				{
+					report_refrigerateSwitch_state(true);
+					report_freezeSwitch_state(false);
+					report_intelligentSwitch_state(false);
+					
+				}
+				else if(g_receive_data[1] == 0x04)		  //速冻模式
+				{
+					report_refrigerateSwitch_state(false);
+					report_freezeSwitch_state(true);
+					report_intelligentSwitch_state(false);
+				}
+		    }
+			else ;
+			if((g_receive_data[2] >= 0x68) && (g_receive_data[2] <= 0x76))       //冷藏设定 2 - 9 9对应主控板的OFF
+			{
+				if((g_receive_data[11] >= 0x00) && (g_receive_data[11] <= 0xC8)) //冷藏实际-50 - 50 	
+				{
+					if((g_receive_data[2] != g_receive_data_old[2])||(g_receive_data[11] != g_receive_data_old[11]))
+					{
+						g_dev_info.g_refrigerator_temp_current = ((int)g_receive_data[11] - 100)/2;
+						//g_dev_info.g_refrigerator_temp_target  = ((int)g_receive_data[2] - 100)/2;
+						report_refrigerator_state(((int)g_receive_data[2] - 100)/2,((int)g_receive_data[11] - 100)/2);
+					}
+					else ;
+					if((g_receive_data[4] >= 0x34) && (g_receive_data[4] <= 0x46))  //冷冻设定-24 - -15
+					{
+						if((g_receive_data[13] >= 0x00) && (g_receive_data[13] <= 0xC8)) //冷冻实际 -50 - 50
+						{
+							if((g_receive_data[4] != g_receive_data_old[4])||(g_receive_data[13] != g_receive_data_old[13]))
+							{
+								g_dev_info.g_freezer_temp_current = ((int)g_receive_data[13] - 100)/2;
+								//g_dev_info.g_freezer_temp_target  = ((int)g_receive_data[4] - 100)/2;
+								report_freezer_state(((int)g_receive_data[4] - 100)/2,((int)g_receive_data[13] - 100)/2);
+							}
+							else ;
+							if((g_receive_data[3] >= 0x60) && (g_receive_data[3] <= 0x6E))  //变温设定 -2 - 5
+							{
+								if(g_receive_data[3] != g_receive_data_old[3])
+								{
+									//g_dev_info.g_variableTemper_state_target = ((int)g_receive_data[3] - 100)/2;
+									report_variableTemper_state(((int)g_receive_data[3] - 100)/2);
+								}
+						        else ;
+								if((g_receive_data[14] >= 0x00) && (g_receive_data[14] <= 0xC8)) //变温实际 -50 - 50
+								{
+									if(g_receive_data[14] != g_receive_data_old[14])
+									{
+										g_dev_info.g_VariableRoom1_temp_current = ((int)g_receive_data[14] - 100)/2;
+										report_VariableRoom1_state(((int)g_receive_data[14] - 100)/2);
+									}
+									else ;
+									if(((g_receive_data[19]&BYTE_8)>>7)==1)
+									{
+										report_coolingSwitch_state(true);
+									}
+									else 
+									{
+										report_coolingSwitch_state(false);
+									}
+									if((g_receive_data[6] != g_receive_data_old[6])||(g_receive_data[7] != g_receive_data_old[7]))
+									{
+										if((g_receive_data[6])||(g_receive_data[7]&0x06))
+										{
+											if(g_receive_data[6]&0x01)
+											   report_faultDetection_state(false,100);
+											if(g_receive_data[6]&0x02)
+											   report_faultDetection_state(false,101);
+											if(g_receive_data[6]&0x04)
+											   report_faultDetection_state(false,102);
+											if(g_receive_data[6]&0x08)
+											   report_faultDetection_state(false,103);
+											if(g_receive_data[6]&0x10)
+											   report_faultDetection_state(false,104);
+											if(g_receive_data[6]&0x20)
+											   report_faultDetection_state(false,105);
+											if(g_receive_data[6]&0x40)
+											   report_faultDetection_state(false,106);
+											if(g_receive_data[6]&0x80)
+											   report_faultDetection_state(false,107);
+											if(g_receive_data[7]&0x02)
+											   report_faultDetection_state(false,108);
+											if(g_receive_data[7]&0x04)
+											   report_faultDetection_state(false,200);
+										}
+										else
+										{
+											report_faultDetection_state(true,0);
+										}
+										
+									}
+									else ;
+								}
+								else 
+								{
+									;
+								}
+							}
+							else
+							{
+								;
+							}
+						}
+						else
+						{
+							;
+						}
+					}
+					else
+					{
+						;
+					}
+				}
+				else
+				{
+					;
+				}
+			}
+			else
+			{
+				;
+			}
 		}
-		else if(g_receive_data[1] == 0x01 )	    //模式设定 0x01 智能模式
+    	else
 		{
-			g_dev_info.g_refrigerateSwitch = false;
-			g_dev_info.g_freezeSwitch = false;
-			g_dev_info.g_intelligentSwitch = true;
-			report_freezeSwitch_state(g_dev_info.g_freezeSwitch);
-			report_intelligentSwitch_state(g_dev_info.g_intelligentSwitch);
-			report_refrigerateSwitch_state(g_dev_info.g_refrigerateSwitch);
-			//printf("Lidongdong :g_receive_data[2]:0x01\r\n");    //Lidongdong add @2021-2-4.	
+			;
 		}
-		else if(g_receive_data[1] == 0x02 )	    //模式设定 0x02 假日模式
-		{
-			printf("Lidongdong :g_receive_data[2]:0x02\r\n");    //Lidongdong add @2021-2-4.
-		}	
-		else if(g_receive_data[1] == 0x03 )	    //模式设定 0x03 速冷模式
-		{
-			g_dev_info.g_refrigerateSwitch = true;
-			g_dev_info.g_freezeSwitch = false;
-			g_dev_info.g_intelligentSwitch = false;
-			report_freezeSwitch_state(g_dev_info.g_freezeSwitch);
-			report_intelligentSwitch_state(g_dev_info.g_intelligentSwitch);
-			report_refrigerateSwitch_state(g_dev_info.g_refrigerateSwitch);
-			//printf("Lidongdong :g_receive_data[2]:0x03\r\n");    //Lidongdong add @2021-2-4.
-		}	
-		else if(g_receive_data[1] == 0x04 )	    //模式设定 0x04 速冻模式
-		{
-			g_dev_info.g_refrigerateSwitch = false;
-			g_dev_info.g_freezeSwitch = true;
-			g_dev_info.g_intelligentSwitch = false;
-			report_freezeSwitch_state(g_dev_info.g_freezeSwitch);
-			report_intelligentSwitch_state(g_dev_info.g_intelligentSwitch);
-			report_refrigerateSwitch_state(g_dev_info.g_refrigerateSwitch);
-			//printf("Lidongdong :g_receive_data[2]:0x04\r\n");    //Lidongdong add @2021-2-4.
-		}	
-		else if(g_receive_data[1] == 0x05 )	    //模式设定 0x05 静音模式
-		{	
-			printf("Lidongdong :g_receive_data[2]:0x05\r\n");    //Lidongdong add @2021-2-4.
-		}
-		if((g_receive_data[2])&&(g_receive_data[11]))		//冷藏设置温度 Value = realtmp*2+100
-		{
-			g_dev_info.g_refrigerator_temp_target = ((int)g_receive_data[2] - 100)/2;
-			//printf("Lidongdong :g_refrigerator_temp_target:%d\r\n",g_dev_info.g_refrigerator_temp_target );    //Lidongdong add @2021-2-4.
-			
-			g_dev_info.g_refrigerator_temp_current = ((int)g_receive_data[11] - 100)/2;
-			report_refrigerator_state(g_dev_info.g_refrigerator_temp_target,g_dev_info.g_refrigerator_temp_current);
-		}
-		
-		if((g_receive_data[4])&&(g_receive_data[13]))	    //冷冻设置温度
-		{
-			g_dev_info.g_freezer_temp_target = ((int)g_receive_data[4] - 100)/2;
-            //printf("Lidongdong :g_freezer_temp_target:%d\r\n",g_dev_info.g_freezer_temp_target );//Lidongdong add @2021-2-7.
-			
-			g_dev_info.g_freezer_temp_current = ((int)g_receive_data[13] - 100)/2;
-			report_freezer_state(g_dev_info.g_freezer_temp_target,g_dev_info.g_freezer_temp_current);
-		}
-		
-		if(g_receive_data[3])                               //变温设定温度  Add by wangshuqiang 2021-2-20
-		{
-			g_dev_info.g_VariableRoom1_temp_target = ((int)g_receive_data[3] - 100)/2;
-			report_VariableRoom1_state(g_dev_info.g_VariableRoom1_temp_target);
-		}
-		if((((g_receive_data[19]&BYTE_8)>>7)==0)||(((g_receive_data[19]&BYTE_8)>>7)==1)) //判断第19字节最高位是否为1或0 Add by wangshuqiang 2021-2-20
-		{
-			if((g_receive_data[19]&0x80)>>7)
-			    g_dev_info.g_coolingSwitch = false;
-		    else
-				g_dev_info.g_coolingSwitch = true;
-			report_coolingSwitch_state(g_dev_info.g_coolingSwitch);
-		}
-		//todo
-		
 	}
+	else if(g_receive_data[0] == 0x8D)
+	{
+		if(g_receive_data[1] == 0x06)
+		{
+			uart0_send_data(Wifi_clean_config,sizeof(Wifi_clean_config));
+			hilink_restore_factory_settings();      //恢复出厂设置接口
+		}
+		else
+		{
+			;
+		}
+	}
+	else
+	{
+		;
+	}
+	ETS_UART_INTR_ENABLE();							//解析完成后使能串口中断
+}
+void 
+uart0_rec_data_trans()
+{
+	if(g_receive_data[0] == 0xaa )                  //引导码 0xAA
+    {
+		  g_send_data[0]  = g_receive_data[0];      //引导码赋值
+		  g_send_data[1]  = g_receive_data[1];      //模式赋值	
+		  g_send_data[2]  = g_receive_data[2];	    //冷藏设定赋值
+		  g_send_data[3]  = g_receive_data[3];	    //变温设定赋值
+		  g_send_data[4]  = g_receive_data[4];	    //冷冻设定赋值
+		  g_send_data[10] = g_receive_data[19];     //开关设定赋值
+	}
+	
 }
 
+bool Check_Receive_num(uint8 *arrayA,int len)
+{
+	short int temp = 0;
+	unsigned int i=0;
+	bool flag = false;
+	for(i = 0;i < len-1; i++)
+	{
+		temp = arrayA[i] + temp;
+	}
+	temp = temp & 0x00FF;
+	if(temp == arrayA[len-1])
+		flag = true;
+	else 
+		flag = false;
+	
+	return flag;
+}
 void
 uart_init_new(void)
 {
@@ -556,15 +723,19 @@ uart_init_new(void)
 
     UART_IntrConfTypeDef uart_intr;
     uart_intr.UART_IntrEnMask = UART_RXFIFO_TOUT_INT_ENA | UART_FRM_ERR_INT_ENA | UART_RXFIFO_FULL_INT_ENA | UART_TXFIFO_EMPTY_INT_ENA;
-    uart_intr.UART_RX_FifoFullIntrThresh = 23;
+    uart_intr.UART_RX_FifoFullIntrThresh = 100;
     uart_intr.UART_RX_TimeOutIntrThresh = 2;
     uart_intr.UART_TX_FifoEmptyIntrThresh = 20;
     UART_IntrConfig(UART0, &uart_intr);
 
-    UART_SetPrintPort(UART0);
+    //UART_SetPrintPort(UART0);
     UART_intr_handler_register(uart0_rx_intr_handler, NULL);
     ETS_UART_INTR_ENABLE();
 
+    /*trans UART0 TX/RX to the CTS/RTS   add bywangshuqiang*/
+    PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTCK_U, FUNC_U0CTS);//CONFIG MTCK PIN FUNC TO U0CTS
+    PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTDO_U, FUNC_U0RTS);//CONFIG MTDO PIN FUNC TO U0RTS
+    SET_PERI_REG_MASK(0x3ff00028 , BIT2);//SWAP PIN : U0TXD<==>U0RTS(MTDO) , U0RXD<==>U0CTS(MTCK)
     /*
     UART_SetWordLength(UART0,UART_WordLength_8b);
     UART_SetStopBits(UART0,USART_StopBits_1);
