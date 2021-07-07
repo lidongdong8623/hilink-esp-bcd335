@@ -35,7 +35,11 @@ _memmap_cacheattr_wb_allvalid = 0x22222112;
 _memmap_cacheattr_wt_allvalid = 0x22222112;
 _memmap_cacheattr_bp_allvalid = 0x22222222;
 PROVIDE(_memmap_cacheattr_reset = _memmap_cacheattr_wb_trapnull);
+<<<<<<< HEAD
 hilink_printf = printf;
+=======
+hilink_printf = printf; /*Add by lidongdong @20210116*/
+>>>>>>> d8fec011c7d87fcd256ca3b294bfba1cf829f3ae
 SECTIONS
 {
   .dport0.rodata : ALIGN(4)
@@ -111,7 +115,14 @@ SECTIONS
     *libmbedtls.a:(.rodata.* .rodata)
     *libssl.a:(.rodata.* .rodata)
     *libopenssl.a:(.rodata.* .rodata)
+<<<<<<< HEAD
     *libhilinkdevicesdk.a:(.rodata.* .rodata)
+=======
+   /* *libplatforms.a:(.rodata.* .rodata)*/ 
+   /* Add by lidongdong */ 
+    *libhilinkdevicesdk.a:(.rodata.* .rodata)
+   /* Add by lidongdong end*/ 
+>>>>>>> d8fec011c7d87fcd256ca3b294bfba1cf829f3ae
     *(.irom0.literal .irom.literal .irom.text.literal .irom0.text .irom.text)
     *(.literal.* .text.*)
     _irom0_text_end = ABSOLUTE(.);

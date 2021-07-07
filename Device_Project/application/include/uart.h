@@ -34,7 +34,10 @@ extern "C" {
 #define UART_INTR_MASK          0x1ff
 #define UART_LINE_INV_MASK      (0x3f<<19)
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> d8fec011c7d87fcd256ca3b294bfba1cf829f3ae
 typedef enum {
     UART_WordLength_5b = 0x0,
     UART_WordLength_6b = 0x1,
@@ -288,7 +291,11 @@ void uart_init_new(void);
   *  
   * @return  null
   */
+<<<<<<< HEAD
 void printf16(uint8* start, int len);
+=======
+void printf16(char* start, int len);
+>>>>>>> d8fec011c7d87fcd256ca3b294bfba1cf829f3ae
 
 /**
   * @brief   send data[] to mcu by uart0.
@@ -313,6 +320,7 @@ void uart0_rec_data_parse();
   * @param uint8 *arrayB
   * @return  bool,if equal return true.
   */
+<<<<<<< HEAD
 bool is_arry_equal(uint8 *arrayA, uint8 *arrayB ,int len);
 
 /**
@@ -331,6 +339,15 @@ bool Check_Receive_num(uint8 *arrayA,int len);
 /**
   * @}
   */
+=======
+bool is_arry_equal(uint8 *arrayA, uint8 *arrayB);
+
+
+/**
+  * @}
+  */
+
+>>>>>>> d8fec011c7d87fcd256ca3b294bfba1cf829f3ae
 /**
   * @}
   */

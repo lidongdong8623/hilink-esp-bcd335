@@ -106,7 +106,11 @@ int hilink_get_utc_time_info(pstHILINK_TIME_INFO p_time_info);
 int hilink_convert_time(unsigned long long time_ms, pstHILINK_TIME_INFO p_time_info);
 
 /*
+<<<<<<< HEAD
  * 设备离线时，如果在App上删除了设备， 云端会给设备下发Errcode=5或Errcode=6错误码。
+=======
+ * 设备离线时，如果在App上删除了设备，设备再次上线时云端会给设备下发Errcode=5或Errcode=6错误码。
+>>>>>>> d8fec011c7d87fcd256ca3b294bfba1cf829f3ae
  * 该接口用于使能SDK处理云端下发的Errcode=5或Errcode=6错误码。
  * enable为0表示SDK不处理云端下发的Errcode=5或Errcode=6错误码，此时SDK不会清除设备端注册信息，
  * 需要用户手动硬件恢复出厂设置，设备才能重新进行配网状态。

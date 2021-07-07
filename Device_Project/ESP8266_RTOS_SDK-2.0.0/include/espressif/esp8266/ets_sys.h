@@ -40,6 +40,7 @@ extern uint32 WDEV_INTEREST_EVENT;
 #define INT_ENA_WDEV        0x3ff20c18
 #define WDEV_TSF0_REACH_INT (BIT(27))
 
+<<<<<<< HEAD
 #define ETS_NMI_LOCK()  \
     do {    \
         char m = 10;    \
@@ -56,6 +57,8 @@ extern uint32 WDEV_INTEREST_EVENT;
     } while (0)
 
 
+=======
+>>>>>>> d8fec011c7d87fcd256ca3b294bfba1cf829f3ae
 #define ETS_INTR_LOCK() do {    \
     if (NMIIrqIsOn == 0) { \
         vPortEnterCritical();   \

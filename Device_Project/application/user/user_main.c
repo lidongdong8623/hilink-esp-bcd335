@@ -21,6 +21,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  */
+<<<<<<< HEAD
 #include "esp_common.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,6 +33,18 @@
 #include "user_config.h"
 #include "gpio.h"
 #include "hw_timer.h"
+=======
+
+#include "esp_common.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "uart.h"
+>>>>>>> d8fec011c7d87fcd256ca3b294bfba1cf829f3ae
 
 /******************************************************************************
  * FunctionName : user_rf_cal_sector_set
@@ -81,12 +94,29 @@ uint32 user_rf_cal_sector_set(void)
 
     return rf_cal_sec;
 }
+<<<<<<< HEAD
+=======
+/*
+typedef struct {
+    UART_BautRate   baud_rate;
+    UART_WordLength data_bits;
+    UART_ParityMode parity;    // chip size in byte
+    UART_StopBits   stop_bits;
+    UART_HwFlowCtrl flow_ctrl;
+    uint8           UART_RxFlowThresh ;
+    uint32          UART_InverseMask;
+} UART_ConfigTypeDef;
+*/
+
+
+>>>>>>> d8fec011c7d87fcd256ca3b294bfba1cf829f3ae
 /******************************************************************************
  * FunctionName : user_init
  * Description  : entry of user application, init user function here
  * Parameters   : none
  * Returns      : none
 *******************************************************************************/
+<<<<<<< HEAD
 
 void parse_task(void* param)
 {
@@ -131,5 +161,16 @@ void user_init(void)
     printf("SDK version:%s\n", system_get_sdk_version());
 	hilink_main();
 	xTaskCreate(parse_task, "parse_task", 1024, NULL, 3, NULL);
+=======
+void user_init(void)
+{
+	uart_init_new();//74800bps
+	//char* test_str = "Welcome to www.aucma.com\r\n";
+	//uart1_write_char('A');
+    printf("SDK version:%s\n", system_get_sdk_version());
+	
+    /* 启动 HiLink 任务 */
+    hilink_main(); // Add by lidongdong @2021-01-21.
+>>>>>>> d8fec011c7d87fcd256ca3b294bfba1cf829f3ae
 }
 

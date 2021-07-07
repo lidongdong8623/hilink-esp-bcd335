@@ -39,7 +39,11 @@ else
 fi
 
 echo "Please check SDK_PATH & BIN_PATH, enter (Y/y) to continue:"
+<<<<<<< HEAD
 input=y
+=======
+read input
+>>>>>>> d8fec011c7d87fcd256ca3b294bfba1cf829f3ae
 
 if [[ $input != Y ]] && [[ $input != y ]]; then
     exit
@@ -56,7 +60,10 @@ echo ""
 
 echo "STEP 2: choose bin generate(0=eagle.flash.bin+eagle.irom0text.bin, 1=user1.bin, 2=user2.bin)"
 echo "enter (0/1/2, default 0):"
+<<<<<<< HEAD
 
+=======
+>>>>>>> d8fec011c7d87fcd256ca3b294bfba1cf829f3ae
 read input
 
 if [ -z "$input" ]; then
@@ -97,7 +104,11 @@ echo ""
 
 echo "STEP 3: choose spi speed(0=20MHz, 1=26.7MHz, 2=40MHz, 3=80MHz)"
 echo "enter (0/1/2/3, default 2):"
+<<<<<<< HEAD
 input=2
+=======
+read input
+>>>>>>> d8fec011c7d87fcd256ca3b294bfba1cf829f3ae
 
 if [ -z "$input" ]; then
     spi_speed=40
@@ -116,7 +127,11 @@ echo ""
 
 echo "STEP 4: choose spi mode(0=QIO, 1=QOUT, 2=DIO, 3=DOUT)"
 echo "enter (0/1/2/3, default 0):"
+<<<<<<< HEAD
 input=0
+=======
+read input
+>>>>>>> d8fec011c7d87fcd256ca3b294bfba1cf829f3ae
 
 if [ -z "$input" ]; then
     spi_mode=QIO
@@ -144,7 +159,11 @@ echo "    7=4096KB(2048KB+2048KB) not support ,just for compatible with nodeMCU 
 echo "    8=8192KB(1024KB+1024KB)"
 echo "    9=16384KB(1024KB+1024KB)"
 echo "enter (0/2/3/4/5/6/7/8/9, default 0):"
+<<<<<<< HEAD
 input=5
+=======
+read input
+>>>>>>> d8fec011c7d87fcd256ca3b294bfba1cf829f3ae
 
 if [ -z "$input" ]; then
     spi_size_map=0

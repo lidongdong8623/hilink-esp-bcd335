@@ -129,7 +129,11 @@ static const char mem_debug_file[] ICACHE_RODATA_ATTR STORE_ATTR = __FILE__;
 #define DHCP_OPTION_IDX_DNS_SERVER  8
 #define DHCP_OPTION_IDX_MAX         (DHCP_OPTION_IDX_DNS_SERVER + DNS_MAX_SERVERS)
 
+<<<<<<< HEAD
 #define DHCP_OPTION_60 "AUCMA:Fridge:BCD-335WPGX" //Add by Lidongdong @2021-1-16.
+=======
+#define DHCP_OPTION_60 "AUCMA:Fridge:BCD-335" //Add by Lidongdong @2021-1-16.
+>>>>>>> d8fec011c7d87fcd256ca3b294bfba1cf829f3ae
 
 /** Holds the decoded option values, only valid while in dhcp_recv.
     @todo: move this into struct dhcp? */
@@ -184,7 +188,10 @@ static void dhcp_option_short(struct dhcp *dhcp, u16_t value);
 static void dhcp_option_long(struct dhcp *dhcp, u32_t value);
 #if LWIP_NETIF_HOSTNAME
 static void dhcp_option_hostname(struct dhcp *dhcp, struct netif *netif);
+<<<<<<< HEAD
 static void dhcp_option_hostnameex(struct dhcp *dhcp, struct netif *netif);
+=======
+>>>>>>> d8fec011c7d87fcd256ca3b294bfba1cf829f3ae
 #endif /* LWIP_NETIF_HOSTNAME */
 /* always add the DHCP options trailer to end and pad */
 static void dhcp_option_trailer(struct dhcp *dhcp);
@@ -336,8 +343,12 @@ dhcp_select(struct netif *netif)
 #endif
 
 #if LWIP_NETIF_HOSTNAME
+<<<<<<< HEAD
    // dhcp_option_hostname(dhcp, netif);
    dhcp_option_hostnameex(dhcp,netif);
+=======
+    dhcp_option_hostname(dhcp, netif);
+>>>>>>> d8fec011c7d87fcd256ca3b294bfba1cf829f3ae
 #endif /* LWIP_NETIF_HOSTNAME */
 
     dhcp_option_trailer(dhcp);
@@ -985,8 +996,12 @@ dhcp_discover(struct netif *netif)
     /**add options for support more router by liuHan**/
 #ifdef LWIP_ESP8266
 #if LWIP_NETIF_HOSTNAME
+<<<<<<< HEAD
    // dhcp_option_hostname(dhcp, netif);
    dhcp_option_hostnameex(dhcp,netif);
+=======
+    dhcp_option_hostname(dhcp, netif);
+>>>>>>> d8fec011c7d87fcd256ca3b294bfba1cf829f3ae
 #endif /* LWIP_NETIF_HOSTNAME */
 
     dhcp_option(dhcp, DHCP_OPTION_PARAMETER_REQUEST_LIST, 12/*num options*/);
@@ -1557,6 +1572,7 @@ dhcp_option_hostname(struct dhcp *dhcp, struct netif *netif)
     }
   }
 }
+<<<<<<< HEAD
 
 static void
 dhcp_option_hostnameex(struct dhcp *dhcp, struct netif *netif)
@@ -1579,6 +1595,8 @@ dhcp_option_hostnameex(struct dhcp *dhcp, struct netif *netif)
     }
   }
 }
+=======
+>>>>>>> d8fec011c7d87fcd256ca3b294bfba1cf829f3ae
 #endif /* LWIP_NETIF_HOSTNAME */
 
 /**

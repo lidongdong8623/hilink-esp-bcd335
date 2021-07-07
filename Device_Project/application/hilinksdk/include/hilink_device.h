@@ -8,16 +8,27 @@
 
 /* ----------------------------- 供开发者修改的宏定义 ----------------------------- */
 /* 开发者根据实际产品版本信息自行修改 */
+<<<<<<< HEAD
 #define FIRMWARE_VER "1.0.0"      
 #define SOFTWARE_VER "1.0.0"      
 #define HARDWARE_VER "1.0.0"      
+=======
+#define FIRMWARE_VER "1.0.0"
+#define SOFTWARE_VER "1.0.0"
+#define HARDWARE_VER "1.0.0"
+>>>>>>> d8fec011c7d87fcd256ca3b294bfba1cf829f3ae
 
 /* ----------------- HiLink产品模型参数宏定义, 自动生成, 请勿修改 ----------------- */
 /* 设备基本信息 */
 #define PRODUCT_ID "211S"
 #define DEVICE_TYPE "08A"
+<<<<<<< HEAD
 #define MANUAFACTURER "377"
 #define DEVICE_MODEL "BCD-335WPGX"
+=======
+#define MANUAFACTURER "a70"
+#define DEVICE_MODEL "BCD-335"
+>>>>>>> d8fec011c7d87fcd256ca3b294bfba1cf829f3ae
 
 /* 请确保设备类型英文名和厂商英文名长度之和不超过17字节 */
 #define DEVICE_TYPE_NAME "Fridge"
@@ -102,7 +113,11 @@ int handle_intelligentSwitch_cmd(bool *on);
 int handle_refrigerator_cmd(int *target);
 int handle_freezer_cmd(int *target);
 int handle_coolingSwitch_cmd(bool *coolingSwitch);
+<<<<<<< HEAD
 int handle_variableTemper_cmd(int *target);
+=======
+int handle_variableMode_cmd(int *target);
+>>>>>>> d8fec011c7d87fcd256ca3b294bfba1cf829f3ae
 
 /* ------------------------ 处理云端下发的服务查询(GET)命令 ------------------------ */
 int get_refrigerateSwitch_state(bool *on);
@@ -111,7 +126,11 @@ int get_intelligentSwitch_state(bool *on);
 int get_refrigerator_state(int *target, int *current);
 int get_freezer_state(int *target, int *current);
 int get_coolingSwitch_state(bool *coolingSwitch);
+<<<<<<< HEAD
 int get_variableTemper_state(int *target);
+=======
+int get_variableMode_state(int *target);
+>>>>>>> d8fec011c7d87fcd256ca3b294bfba1cf829f3ae
 int get_VariableRoom1_state(int *current);
 int get_faultDetection_state(bool *status, int *code);
 
@@ -167,12 +186,20 @@ int report_freezer_state(int target, int current);
 int report_coolingSwitch_state(bool coolingSwitch);
 
 /*
+<<<<<<< HEAD
  * 功能: 上报variableTemper服务状态给APP
+=======
+ * 功能: 上报variableMode服务状态给APP
+>>>>>>> d8fec011c7d87fcd256ca3b294bfba1cf829f3ae
  * 参数: target - target属性的值
  * 返回: int：0-成功，非0-失败
  * 注意: 此函数由开发者调用
  */
+<<<<<<< HEAD
 int report_variableTemper_state(int target);
+=======
+int report_variableMode_state(int target);
+>>>>>>> d8fec011c7d87fcd256ca3b294bfba1cf829f3ae
 
 /*
  * 功能: 上报VariableRoom1服务状态给APP
@@ -191,6 +218,9 @@ int report_VariableRoom1_state(int current);
  */
 int report_faultDetection_state(bool status, int code);
 
+<<<<<<< HEAD
 void caculate_check_num(unsigned char *arrayA,int len);
 
+=======
+>>>>>>> d8fec011c7d87fcd256ca3b294bfba1cf829f3ae
 #endif /* HILINK_DEVICE_H */

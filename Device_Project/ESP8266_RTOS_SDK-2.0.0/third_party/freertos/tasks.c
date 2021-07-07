@@ -101,8 +101,12 @@ privileged Vs unprivileged linkage and placement. */
 /*
  * Defines the size, in words, of the stack allocated to the idle task.
  */
+<<<<<<< HEAD
 //#define tskIDLE_STACK_SIZE	384
 #define tskIDLE_STACK_SIZE      1024 
+=======
+#define tskIDLE_STACK_SIZE	384
+>>>>>>> d8fec011c7d87fcd256ca3b294bfba1cf829f3ae
 
 #ifdef MEMLEAK_DEBUG
 static const char mem_debug_file[] ICACHE_RODATA_ATTR STORE_ATTR = __FILE__;

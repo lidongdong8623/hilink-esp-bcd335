@@ -5,8 +5,12 @@
  *              请开发者仔细阅读文件中的注释说明，参考或修改实现。
  */
 #include "hilink_ota.h"
+<<<<<<< HEAD
 #include "esp_common.h"
 #include "hw_timer.h"
+=======
+
+>>>>>>> d8fec011c7d87fcd256ca3b294bfba1cf829f3ae
 /*
  * 获取MCU当前版本
  * version表示版本字符串
@@ -18,6 +22,7 @@
  * 注意：如果获取不到MCU的版本，则不对MCU进行升级。
  * 建议厂商在MCU正常启动后，或升级启动后，就将MCU的版本号传递给模组，确保模组可以获取到MCU的版本。
  */
+<<<<<<< HEAD
 
 void update(void)
 {
@@ -28,6 +33,12 @@ int HilinkGetMcuVersion(char *version, unsigned int inLen, unsigned int *outLen)
 {
     /* 厂商实现此接口 */
     return RETURN_OK;
+=======
+int HilinkGetMcuVersion(char *version, unsigned int inLen, unsigned int *outLen)
+{
+    /* 厂商实现此接口 */
+    return RETURN_ERROR_NO_MCU;
+>>>>>>> d8fec011c7d87fcd256ca3b294bfba1cf829f3ae
 }
 
 /*
@@ -46,6 +57,7 @@ int HilinkGetMcuVersion(char *version, unsigned int inLen, unsigned int *outLen)
 int HilinkOtaStartProcess(int type)
 {
     /* 厂商实现此接口 */
+<<<<<<< HEAD
 	/*if(type == UPDATE_TYPE_MANUAL)    //该写法有问题，平台固件版本 
 		hw_timer_set_func(update);
 		hw_timer_arm(500000,1);
@@ -54,6 +66,8 @@ int HilinkOtaStartProcess(int type)
 	*/
 	hw_timer_set_func(update);
 	hw_timer_arm(500000,1);
+=======
+>>>>>>> d8fec011c7d87fcd256ca3b294bfba1cf829f3ae
     return RETURN_OK;
 }
 
